@@ -1,85 +1,110 @@
+using Fusion;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GameLogic : MonoBehaviour
+public class GameLogic : NetworkBehaviour
 {
     //m filas n columnas
     //matriz 6 x 7
 
     GameNode[,] _gameBoar = new GameNode[6,7];
-    [SerializeField]GameNode _nodePrefab;
+    [SerializeField] NetworkPrefabRef _nodePrefab;
 
-    private void Awake()
+    private void Start()
     {
+        EventManager.Subscribe("OnColumnInteract", Dropear);
+        EventManager.Subscribe("OnColumnPoint", Pintar);
+
         for (int i = 0; i < 6; i++)
         {
             for (int j = 0; j < 7; j++)
             {
-                var pos = new Vector3(j,i);
-                _gameBoar[i, j] = Instantiate(_nodePrefab, pos, Quaternion.identity).SetTeam(Team.Empty);
+                var pos = new Vector3(j, i + 0.5f) * 1.25f;
+                //_gameBoar[i, j] = Instantiate(_nodePrefab, pos, Quaternion.identity).SetTeam(Team.Empty);
+                _gameBoar[i, j] = Runner.Spawn(_nodePrefab, pos, Quaternion.identity)
+                    .GetComponent<GameNode>().SetTeam(Team.Empty);
             }
         }
     }
 
-    int dev_team = 0;
-    private void Update()
+    //public override void FixedUpdateNetwork()
+    //{
+    //    //if (Input.anyKeyDown)
+    //    //{
+    //    //    var team = Team.Blue;
+    //    //    if (dev_team % 2 == 0)
+    //    //    {
+    //    //        team = Team.Red;
+    //    //        DropChip(0, team);
+    //    //    }
+    //    //    else
+    //    //    {
+    //    //        DropChip(1, team);
+
+    //    //    }
+
+    //    //    //print("a");
+
+    //    //    dev_team++;
+    //    //}
+
+    //    if (Input.GetKeyDown(KeyCode.Alpha1))
+    //        DropChip(0, Team.Red);
+    //    if (Input.GetKeyDown(KeyCode.Alpha2))
+    //        DropChip(1, Team.Red);
+    //    if (Input.GetKeyDown(KeyCode.Alpha3))
+    //        DropChip(2, Team.Red);
+    //    if (Input.GetKeyDown(KeyCode.Alpha4))
+    //        DropChip(3, Team.Red);
+    //    if (Input.GetKeyDown(KeyCode.Alpha5))
+    //        DropChip(4, Team.Red);
+    //    if (Input.GetKeyDown(KeyCode.Alpha6))
+    //        DropChip(5, Team.Red);
+    //    if (Input.GetKeyDown(KeyCode.Alpha7))
+    //        DropChip(6, Team.Red);
+
+    //    if (Input.GetKeyDown(KeyCode.Q))
+    //        DropChip(0, Team.Blue);
+    //    if (Input.GetKeyDown(KeyCode.W))
+    //        DropChip(1, Team.Blue);
+    //    if (Input.GetKeyDown(KeyCode.E))
+    //        DropChip(2, Team.Blue);
+    //    if (Input.GetKeyDown(KeyCode.R))
+    //        DropChip(3, Team.Blue);
+    //    if (Input.GetKeyDown(KeyCode.T))
+    //        DropChip(4, Team.Blue);
+    //    if (Input.GetKeyDown(KeyCode.Y))
+    //        DropChip(5, Team.Blue);
+    //    if (Input.GetKeyDown(KeyCode.U))
+    //        DropChip(6, Team.Blue);
+    //}
+
+    public void PreviewChip(int column, Team team)
     {
-        //if (Input.anyKeyDown)
-        //{
-        //    var team = Team.Blue;
-        //    if (dev_team % 2 == 0)
-        //    {
-        //        team = Team.Red;
-        //        DropChip(0, team);
-        //    }
-        //    else
-        //    {
-        //        DropChip(1, team);
+        for (int i = 0; i < 7; i++)
+        {
+            if (_gameBoar[5, i].Team != Team.Empty)
+                continue;
 
-        //    }
+            _gameBoar[5, i].SetColor(Team.Empty);
 
-        //    //print("a");
-
-        //    dev_team++;
-        //}
-
-        if (Input.GetKeyDown(KeyCode.Alpha1))
-            DropChip(0, Team.Red);
-        if (Input.GetKeyDown(KeyCode.Alpha2))
-            DropChip(1, Team.Red);
-        if (Input.GetKeyDown(KeyCode.Alpha3))
-            DropChip(2, Team.Red);
-        if (Input.GetKeyDown(KeyCode.Alpha4))
-            DropChip(3, Team.Red);
-        if (Input.GetKeyDown(KeyCode.Alpha5))
-            DropChip(4, Team.Red);
-        if (Input.GetKeyDown(KeyCode.Alpha6))
-            DropChip(5, Team.Red);
-        if (Input.GetKeyDown(KeyCode.Alpha7))
-            DropChip(6, Team.Red);
-
-        if (Input.GetKeyDown(KeyCode.Q))
-            DropChip(0, Team.Blue);
-        if (Input.GetKeyDown(KeyCode.W))
-            DropChip(1, Team.Blue);
-        if (Input.GetKeyDown(KeyCode.E))
-            DropChip(2, Team.Blue);
-        if (Input.GetKeyDown(KeyCode.R))
-            DropChip(3, Team.Blue);
-        if (Input.GetKeyDown(KeyCode.T))
-            DropChip(4, Team.Blue);
-        if (Input.GetKeyDown(KeyCode.Y))
-            DropChip(5, Team.Blue);
-        if (Input.GetKeyDown(KeyCode.U))
-            DropChip(6, Team.Blue);
+        }
+        try
+        {
+            _gameBoar[5, column].SetColor(team);
+        }
+        catch
+        {
+            Debug.Log(column);
+        }
     }
 
     public void DropChip(int column, Team team)
     {
         if (_gameBoar[5,column].Team != Team.Empty)
         {
-            DropChip(Random.Range(0, 7), team);
+            //DropChip(Random.Range(0, 7), team);
             return;
         }
 
@@ -91,18 +116,31 @@ public class GameLogic : MonoBehaviour
 
                 if(CheckForLine(column, i, team))
                 {
-                    Debug.Log("<color=green>Linea formada</color>");
+                    Debug.Log($"<color=green>Linea {team} formada</color>");
                 }
                 break;
             }
         }
-        
+
+        switch (team)
+        {
+            case Team.Red:
+                _turn = Team.Blue;
+                break;
+            case Team.Blue:
+                _turn = Team.Red;
+                break;
+            case Team.Empty:
+                break;
+            default:
+                break;
+        }
     }
 
     public bool CheckForLine(int column, int line, Team team)
     {
-        //if (VerticalCheck(column, line, team)) return true;
-        //if (HorizontalCheck(column, line, team)) return true;
+        if (VerticalCheck(column, line, team)) return true;
+        if (HorizontalCheck(column, line, team)) return true;
         if (DiagonalCheck(column, line, team)) return true;
         return false;
     }
@@ -145,7 +183,7 @@ public class GameLogic : MonoBehaviour
     bool DiagonalCheck(int column, int line, Team team)
     {
         //Debug.Log(DiagonalPositiva(column, line, team));
-        //if(DiagonalPositiva(column, line, team)) return true;
+        if(DiagonalPositiva(column, line, team)) return true;
         if(DiagonalNegativa(column, line, team)) return true;
 
         return false;
@@ -241,5 +279,31 @@ public class GameLogic : MonoBehaviour
         //Debug.Log(inLine);
 
         return false;
+    }
+
+    Team _turn = Team.Red;
+
+    void Dropear(params object[] _vars)
+    {
+        var column = (int)_vars[0];
+        var team = (Team)_vars[1];
+        if (team != _turn) return;
+
+        DropChip(column, team);
+    }
+    void Pintar(params object[] _vars)
+    {
+        var column = (int)_vars[0];
+        var team = (Team)_vars[1];
+        if (team != _turn) return;
+
+
+        PreviewChip(column, team);
+    }
+
+    private void OnDestroy()
+    {
+        EventManager.Unsubscribe("OnColumnInteract", Dropear);
+        EventManager.Unsubscribe("OnColumnPoint", Pintar);
     }
 }

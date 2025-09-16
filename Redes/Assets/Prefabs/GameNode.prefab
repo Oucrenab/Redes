@@ -115,6 +115,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5164108566893671529}
   - component: {fileID: 1493069242075060352}
+  - component: {fileID: -2148048554333210750}
   m_Layer: 0
   m_Name: GameNode
   m_TagString: Untagged
@@ -152,3 +153,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _team: 0
   _renderer: {fileID: 8034275537302334857}
+--- !u!114 &-2148048554333210750
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7895093257880457731}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -1552182283, guid: e725a070cec140c4caffb81624c8c787, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SortKey: 351256981
+  ObjectInterest: 1
+  Flags: 262145
+  NestedObjects: []
+  NetworkedBehaviours:
+  - {fileID: 1493069242075060352}
+  ForceRemoteRenderTimeframe: 0

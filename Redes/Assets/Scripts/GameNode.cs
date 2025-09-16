@@ -1,8 +1,9 @@
+using Fusion;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GameNode : MonoBehaviour
+public class GameNode : NetworkBehaviour
 {
     [SerializeField] Team _team;
     [SerializeField] MeshRenderer _renderer;
@@ -28,6 +29,26 @@ public class GameNode : MonoBehaviour
         _renderer.material.color = color;
 
         //print("b " + color);
+
+        return this;
+    }
+
+    public GameNode SetColor(Team newT)
+    {
+        var color = Color.white;
+        switch (newT)
+        {
+            case Team.Red:
+                color = Color.red;
+                break;
+            case Team.Blue:
+                color = Color.blue;
+                break;
+            case Team.Empty:
+                break;
+        }
+
+        _renderer.material.color = color;
 
         return this;
     }
