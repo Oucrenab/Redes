@@ -3,30 +3,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GameLogic : NetworkBehaviour
+public class GameLogic : NetworkBehaviour, IPlayerJoined
 {
     //m filas n columnas
     //matriz 6 x 7
 
     GameNode[,] _gameBoar = new GameNode[6,7];
     [SerializeField] NetworkPrefabRef _nodePrefab;
+    [SerializeField] Player _playerturn;
+    public bool GameStarted { get; private set; } = false;
 
-    private void Start()
-    {
-        EventManager.Subscribe("OnColumnInteract", Dropear);
-        EventManager.Subscribe("OnColumnPoint", Pintar);
-
-        for (int i = 0; i < 6; i++)
-        {
-            for (int j = 0; j < 7; j++)
-            {
-                var pos = new Vector3(j, i + 0.5f) * 1.25f;
-                //_gameBoar[i, j] = Instantiate(_nodePrefab, pos, Quaternion.identity).SetTeam(Team.Empty);
-                _gameBoar[i, j] = Runner.Spawn(_nodePrefab, pos, Quaternion.identity)
-                    .GetComponent<GameNode>().SetTeam(Team.Empty);
-            }
-        }
-    }
+    //public static GameLogic Instance { get; private set; }
 
     //public override void FixedUpdateNetwork()
     //{
@@ -80,63 +67,137 @@ public class GameLogic : NetworkBehaviour
     //        DropChip(6, Team.Blue);
     //}
 
-    public void PreviewChip(int column, Team team)
+    [Rpc]
+    public void RPC_PreviewChip(int column, Team team)
     {
+        //Debug.Log("PreviewChip");
         for (int i = 0; i < 7; i++)
         {
             if (_gameBoar[5, i].Team != Team.Empty)
                 continue;
 
-            _gameBoar[5, i].SetColor(Team.Empty);
+            _gameBoar[5, i].RPC_SetColor(Team.Empty);
 
         }
-        try
+        _gameBoar[5, column].RPC_SetColor(team);
+
+
+    }
+
+    //void StartGame(params object[] noUse) => RPC_StartGame();
+
+    void StartGame()
+    {
+        //EventManager.Unsubscribe("StartGame", StartGame);
+        //EventManager.Subscribe("OnColumnInteract", Dropear);
+        //EventManager.Subscribe("OnColumnPoint", Pintar);
+
+        for (int i = 0; i < 6; i++)
         {
-            _gameBoar[5, column].SetColor(team);
+            for (int j = 0; j < 7; j++)
+            {
+                var pos = new Vector3(j, i + 0.5f) * 1.25f;
+                //_gameBoar[i, j] = Instantiate(_nodePrefab, pos, Quaternion.identity).SetTeam(Team.Empty);
+                _gameBoar[i, j] = Runner.Spawn(_nodePrefab, Vector3.zero, Quaternion.identity)
+                    .GetComponent<GameNode>();
+                _gameBoar[i, j].transform.position = pos;
+                _gameBoar[i, j].RPC_SetTeam(Team.Empty);
+            }
         }
-        catch
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        GameStarted = true;
+        Debug.Log($"GameStarted {GameStarted}");
+
+        switch (_turn)
         {
-            Debug.Log(column);
+            case Team.Red:
+                _globalLight.color = Color.red;
+                break;
+            case Team.Blue:
+                _globalLight.color = Color.blue;
+                break;
+            case Team.Empty:
+                _globalLight.color = Color.white;
+                break;
+        }
+
+    }
+
+    [Rpc]
+    void RPC_ClearGameBoard()
+    {
+        for(int i = 0;i < _gameBoar.GetLength(0); i++)
+        {
+            for (int j = 0; j < _gameBoar.GetLength(1); j++)
+            {
+                _gameBoar[i, j].RPC_SetTeam(Team.Empty);
+            }
         }
     }
 
-    public void DropChip(int column, Team team)
+    [Rpc]
+    public void RPC_DropChip(int column, Team team)
     {
+        //Debug.Log("DropChip");
         if (_gameBoar[5,column].Team != Team.Empty)
         {
             //DropChip(Random.Range(0, 7), team);
             return;
         }
 
+
         for(int i = 0;i < 6; i++)
         {
             if (_gameBoar[i, column].Team == Team.Empty)
             {
-                _gameBoar[i, column].SetTeam(team);
+                _gameBoar[i, column].RPC_SetTeam(team);
 
-                if(CheckForLine(column, i, team))
-                {
-                    Debug.Log($"<color=green>Linea {team} formada</color>");
-                }
+                if (CheckForLine(column, i, team))
+                    GameOver(team);
                 break;
             }
         }
 
+        SwitchTeam(team);
+    }
+
+    [SerializeField] Light _globalLight;
+    [SerializeField] WinCanvas _winCanvas;
+    void SwitchTeam(Team team)
+    {
         switch (team)
         {
             case Team.Red:
                 _turn = Team.Blue;
+                _globalLight.color = Color.blue;
                 break;
             case Team.Blue:
                 _turn = Team.Red;
+                _globalLight.color = Color.red;
                 break;
             case Team.Empty:
+                _globalLight.color = Color.white;
                 break;
             default:
                 break;
         }
     }
 
+    void GameOver(Team team)
+    {
+        _globalLight.color = Color.white;
+
+        Debug.Log($"<color=green>Linea {team} formada</color>");
+
+        _winCanvas.RPC_WinImage(team);
+
+        RPC_ClearGameBoard();
+    }
+
+    #region Line Checks
     public bool CheckForLine(int column, int line, Team team)
     {
         if (VerticalCheck(column, line, team)) return true;
@@ -166,9 +227,9 @@ public class GameLogic : NetworkBehaviour
                 break;
 
             inLine++;
-            if(inLine >= 5) return true;
+            if (inLine >= 5) return true;
         }
-        for(int i = column; i < 7; i++)
+        for (int i = column; i < 7; i++)
         {
             if (_gameBoar[line, i].Team != team)
                 break;
@@ -183,8 +244,8 @@ public class GameLogic : NetworkBehaviour
     bool DiagonalCheck(int column, int line, Team team)
     {
         //Debug.Log(DiagonalPositiva(column, line, team));
-        if(DiagonalPositiva(column, line, team)) return true;
-        if(DiagonalNegativa(column, line, team)) return true;
+        if (DiagonalPositiva(column, line, team)) return true;
+        if (DiagonalNegativa(column, line, team)) return true;
 
         return false;
     }
@@ -192,7 +253,7 @@ public class GameLogic : NetworkBehaviour
     bool DiagonalPositiva(int column, int line, Team team)
     {
         int inLine = 1;
-        for(int i = 1; i < 5; i++)
+        for (int i = 1; i < 5; i++)
         {
             if (column + i >= 7)
             {
@@ -211,7 +272,7 @@ public class GameLogic : NetworkBehaviour
             inLine++;
             if (inLine >= 4) return true;
         }
-        for(int i = 1; i < 5; i++)
+        for (int i = 1; i < 5; i++)
         {
             if (column - i < 0)
             {
@@ -279,31 +340,41 @@ public class GameLogic : NetworkBehaviour
         //Debug.Log(inLine);
 
         return false;
-    }
+    } 
+    #endregion
 
     Team _turn = Team.Red;
 
-    void Dropear(params object[] _vars)
+    //public void Dropear(params object[] _vars) => RPC_Dropear((int)_vars[0], (Team)_vars[1]);
+
+    public void Dropear(int i, Team t)
     {
-        var column = (int)_vars[0];
-        var team = (Team)_vars[1];
+        if (!GameStarted) return;
+
+        var column = i;
+        var team = t;
         if (team != _turn) return;
-
-        DropChip(column, team);
-    }
-    void Pintar(params object[] _vars)
-    {
-        var column = (int)_vars[0];
-        var team = (Team)_vars[1];
-        if (team != _turn) return;
-
-
-        PreviewChip(column, team);
+        //Debug.Log("Dropear");
+        RPC_DropChip(column, team);
     }
 
-    private void OnDestroy()
+    //public void Pintar(params object[] _vars) => RPC_Pintar((int)_vars[0], (Team)_vars[1]);
+
+    public void Pintar(int i , Team t)
     {
-        EventManager.Unsubscribe("OnColumnInteract", Dropear);
-        EventManager.Unsubscribe("OnColumnPoint", Pintar);
+        if (!GameStarted) return;
+        var column = i;
+        var team = t;
+        if (team != _turn) return;
+
+        //Debug.Log("Pintar");
+
+        RPC_PreviewChip(column, team);
+    }
+
+    public void PlayerJoined(PlayerRef player)
+    {
+        if (Runner.SessionInfo.PlayerCount >= 2 && !GameStarted)
+            StartGame();
     }
 }

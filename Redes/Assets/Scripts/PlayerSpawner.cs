@@ -19,9 +19,10 @@ public class PlayerSpawner : SimulationBehaviour,IPlayerJoined
                 .GetComponent<Player>().SetCam(_cam);
 
             if (Runner.SessionInfo.PlayerCount == 1)
-                spawnPlayer.SetTeam(Team.Red);
+                spawnPlayer.RPC_SetTeam(Team.Red);
             else
-                spawnPlayer.SetTeam(Team.Blue);
+                spawnPlayer.RPC_SetTeam(Team.Blue);
         }
+
     }
 }

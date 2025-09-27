@@ -1,18 +1,29 @@
+using Fusion;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ColumnTrigger : MonoBehaviour, IPointable
+public class ColumnTrigger : NetworkBehaviour, IPointable
 {
-    [SerializeField, Range(1, 7)] int _column;
+    [SerializeField] GameLogic _gameLogic;
+    [SerializeField, Range(0, 7)]public int _column;//a
+    public int lareputaqueteparionetwork;
 
-    public void Interact(Team team)
+    [Rpc]
+    public void RPC_Interact(Team team, Player player)
     {
-        EventManager.Trigger("OnColumnInteract", _column - 1, team);
+        //EventManager.Trigger("OnColumnInteract", _column - 1, team, player);
+        //if (GameLogic.Instance.GameStarted)
+        //    GameLogic.Instance.Dropear(_column, team);
+        _gameLogic.Dropear(_column-1, team);
+        //Debug.Log($"{name} Interact {_column} {player.name} {team}");
     }
 
-    public void Pointed(Team team)
+    [Rpc]
+    public void RPC_Pointed(Team team, Player player)
     {
-        EventManager.Trigger("OnColumnPoint", _column - 1, team);
+        //EventManager.Trigger("OnColumnPoint", _column - 1, team, player);
+        _gameLogic.Pintar(_column-1, team);
+        //Debug.Log($"{name} Pointed {_column} {player.name} {team}");
     }
 }

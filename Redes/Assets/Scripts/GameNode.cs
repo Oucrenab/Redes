@@ -10,7 +10,8 @@ public class GameNode : NetworkBehaviour
 
     public Team Team { get { return _team; } }
 
-    public GameNode SetTeam(Team newT)
+    [Rpc]
+    public void RPC_SetTeam(Team newT)
     {
         _team = newT;
         var color = Color.white;
@@ -30,10 +31,11 @@ public class GameNode : NetworkBehaviour
 
         //print("b " + color);
 
-        return this;
+        //return this;
     }
 
-    public GameNode SetColor(Team newT)
+    [Rpc]
+    public void RPC_SetColor(Team newT)
     {
         var color = Color.white;
         switch (newT)
@@ -50,7 +52,7 @@ public class GameNode : NetworkBehaviour
 
         _renderer.material.color = color;
 
-        return this;
+        //return this;
     }
 }
 

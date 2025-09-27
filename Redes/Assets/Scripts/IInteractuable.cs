@@ -4,5 +4,5 @@ using UnityEngine;
 
 public interface IInteractuable
 {
-    public void Interact(Team team);
+    public void RPC_Interact(Team team, Player player);
 }

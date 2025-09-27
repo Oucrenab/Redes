@@ -52,6 +52,9 @@ MonoBehaviour:
   _speed: 3
   _camHolder: {fileID: 8176318780691340293}
   _camTarget: {fileID: 860742922870206400}
+  _wall:
+    serializedVersion: 2
+    m_Bits: 256
   _cam: {fileID: 0}
   _sens: 100
   _redColor: {r: 0.7735849, g: 0.39044145, b: 0.39044145, a: 1}

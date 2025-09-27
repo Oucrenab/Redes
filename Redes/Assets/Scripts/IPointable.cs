@@ -4,5 +4,5 @@ using UnityEngine;
 
 public interface IPointable : IInteractuable
 {
-    public void Pointed(Team team);   
+    public void RPC_Pointed(Team team, Player player);   
 }

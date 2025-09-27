@@ -10,6 +10,7 @@ public class Player : NetworkBehaviour
     [SerializeField] float _speed;
     [SerializeField] Transform _camHolder;
     [SerializeField] Transform _camTarget;
+    [SerializeField] LayerMask _wall;
     public Transform camHolder { get { return _camHolder; } }
     public Transform camTarget { get { return _camTarget; } }
 
@@ -34,7 +35,6 @@ public class Player : NetworkBehaviour
 
         _camRotation.x = Mathf.Clamp(_camRotation.x, -89, 89);
 
-        ColumnSelectro();
     }
 
 
@@ -43,7 +43,9 @@ public class Player : NetworkBehaviour
     {
         PlayerRotate();
         Movement(_dirInputs);
-        
+
+        ColumnSelectro();
+
     }
 
     float _rayDist = 10;
@@ -54,10 +56,10 @@ public class Player : NetworkBehaviour
         {
             if(hit.transform.TryGetComponent<IPointable>(out var pointed)) 
             {
-                pointed.Pointed(_team);
+                pointed.RPC_Pointed(_team, this);
 
                 if (Input.GetMouseButtonDown(0))
-                    pointed.Interact(_team);
+                    pointed.RPC_Interact(_team, this);
             }
         }
     }
@@ -70,10 +72,30 @@ public class Player : NetworkBehaviour
 
     void Movement(Vector3 dir)
     {
+        dir = WallCheck(dir);
         dir = dir.normalized * (_speed * Runner.DeltaTime);
 
         _netTransform.transform.position += (transform.forward * dir.x) + (transform.right * dir.z);
         //transform.position += (transform.forward * dir.x) + (transform.right * dir.z);
+    }
+
+    Vector3 WallCheck(Vector3 dir)
+    {
+        Debug.DrawRay(transform.position + new Vector3(0, 0.5f, 0), transform.forward, Color.green);
+        Debug.DrawRay(transform.position + new Vector3(0, 0.5f, 0), transform.right, Color.green);
+        Debug.DrawRay(transform.position + new Vector3(0, 0.5f, 0), -transform.forward, Color.red);
+        Debug.DrawRay(transform.position + new Vector3(0, 0.5f, 0), -transform.right, Color.red);
+
+        if(Physics.Raycast(transform.position + new Vector3(0,0.5f,0), transform.forward, 1, _wall) && dir.x > 0)
+            dir.x = 0;
+        if(Physics.Raycast(transform.position + new Vector3(0, 0.5f, 0), -transform.forward, 1, _wall) && dir.x < 0)
+            dir.x = 0;
+        if(Physics.Raycast(transform.position + new Vector3(0, 0.5f, 0), transform.right, 1, _wall) && dir.z > 0)
+            dir.z = 0;
+        if(Physics.Raycast(transform.position + new Vector3(0, 0.5f, 0), -transform.right, 1, _wall) && dir.z < 0)
+            dir.z = 0;
+
+        return dir;
     }
 
     public Player SetCam(CamFollow cam)
@@ -84,12 +106,14 @@ public class Player : NetworkBehaviour
         return this;
     }
 
-    Team _team = Team.Red;
+    [Networked] Team _team { get; set; } = Team.Red;
 
     [SerializeField] Color _redColor;
     [SerializeField] Color _blueColor;
     [SerializeField] MeshRenderer _renderer;
-    public Player SetTeam(Team team)
+
+    [Rpc]
+    public void RPC_SetTeam(Team team)
     {
         _team = team;
         switch (_team)
@@ -105,6 +129,6 @@ public class Player : NetworkBehaviour
             default:
                 break;
         }
-        return this;
+        //return this;
     }
 }
