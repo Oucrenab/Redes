@@ -9,7 +9,7 @@ public class ColumnTrigger : NetworkBehaviour, IPointable
     [SerializeField, Range(0, 7)]public int _column;//a
     public int lareputaqueteparionetwork;
 
-    [Rpc]
+    //[Rpc]
     public void RPC_Interact(Team team, Player player)
     {
         //EventManager.Trigger("OnColumnInteract", _column - 1, team, player);
@@ -19,7 +19,7 @@ public class ColumnTrigger : NetworkBehaviour, IPointable
         //Debug.Log($"{name} Interact {_column} {player.name} {team}");
     }
 
-    [Rpc]
+    //[Rpc]
     public void RPC_Pointed(Team team, Player player)
     {
         //EventManager.Trigger("OnColumnPoint", _column - 1, team, player);

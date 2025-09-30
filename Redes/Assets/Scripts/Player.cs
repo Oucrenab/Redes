@@ -16,6 +16,11 @@ public class Player : NetworkBehaviour
 
     [SerializeField] CamFollow _cam;
     [SerializeField] float _sens;
+    [Networked]public Team _team { get; set; } = Team.Red;
+
+    [SerializeField] Color _redColor;
+    [SerializeField] Color _blueColor;
+    [SerializeField] MeshRenderer _renderer;
 
     Vector3 _dirInputs;
     Vector2 _mouseInput;
@@ -35,9 +40,11 @@ public class Player : NetworkBehaviour
 
         _camRotation.x = Mathf.Clamp(_camRotation.x, -89, 89);
 
+        if (_clickPress == false)
+            _clickPress = Input.GetMouseButton(0);
     }
 
-
+    bool _clickPress;
 
     public override void FixedUpdateNetwork()
     {
@@ -45,7 +52,7 @@ public class Player : NetworkBehaviour
         Movement(_dirInputs);
 
         ColumnSelectro();
-
+        _clickPress = false;
     }
 
     float _rayDist = 10;
@@ -58,7 +65,7 @@ public class Player : NetworkBehaviour
             {
                 pointed.RPC_Pointed(_team, this);
 
-                if (Input.GetMouseButtonDown(0))
+                if (_clickPress)
                     pointed.RPC_Interact(_team, this);
             }
         }
@@ -106,11 +113,6 @@ public class Player : NetworkBehaviour
         return this;
     }
 
-    [Networked] Team _team { get; set; } = Team.Red;
-
-    [SerializeField] Color _redColor;
-    [SerializeField] Color _blueColor;
-    [SerializeField] MeshRenderer _renderer;
 
     [Rpc]
     public void RPC_SetTeam(Team team)

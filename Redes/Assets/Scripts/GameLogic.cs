@@ -7,12 +7,18 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined
 {
     //m filas n columnas
     //matriz 6 x 7
+    //cosa para le spawn
+    [Networked] public bool _redTaken { get; set; }
 
     GameNode[,] _gameBoar = new GameNode[6,7];
     [SerializeField] NetworkPrefabRef _nodePrefab;
     [SerializeField] Player _playerturn;
-    public bool GameStarted { get; private set; } = false;
+    [Networked] public bool GameStarted { get; set; } = false;
 
+    [SerializeField] Light _globalLight;
+    [SerializeField] WinCanvas _winCanvas;
+
+    Team _turn = Team.Red;
     //public static GameLogic Instance { get; private set; }
 
     //public override void FixedUpdateNetwork()
@@ -85,8 +91,8 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined
     }
 
     //void StartGame(params object[] noUse) => RPC_StartGame();
-
-    void StartGame()
+    [Rpc]
+    void RPC_StartGame()
     {
         //EventManager.Unsubscribe("StartGame", StartGame);
         //EventManager.Subscribe("OnColumnInteract", Dropear);
@@ -164,8 +170,7 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined
         SwitchTeam(team);
     }
 
-    [SerializeField] Light _globalLight;
-    [SerializeField] WinCanvas _winCanvas;
+
     void SwitchTeam(Team team)
     {
         switch (team)
@@ -195,6 +200,9 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined
         _winCanvas.RPC_WinImage(team);
 
         RPC_ClearGameBoard();
+        Invoke("RPC_StartGame", 5f);
+
+        GameStarted = false;
     }
 
     #region Line Checks
@@ -343,7 +351,6 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined
     } 
     #endregion
 
-    Team _turn = Team.Red;
 
     //public void Dropear(params object[] _vars) => RPC_Dropear((int)_vars[0], (Team)_vars[1]);
 
@@ -375,6 +382,13 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined
     public void PlayerJoined(PlayerRef player)
     {
         if (Runner.SessionInfo.PlayerCount >= 2 && !GameStarted)
-            StartGame();
+            RPC_StartGame();
     }
+
+    //public void PlayerLeft(PlayerRef player)
+    //{
+    //    var p = FindObjectOfType<Player>()._team;
+
+    //    GameOver(p);
+    //}
 }
