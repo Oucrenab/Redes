@@ -191,6 +191,8 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined
         }
     }
 
+    [SerializeField] ParticleSystem _redWins, _blueWins;
+
     void GameOver(Team team)
     {
         _globalLight.color = Color.white;
@@ -198,6 +200,11 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined
         Debug.Log($"<color=green>Linea {team} formada</color>");
 
         _winCanvas.RPC_WinImage(team);
+
+        if (team == Team.Red)
+            _redWins.Play();
+        else
+            _blueWins.Play();
 
         RPC_ClearGameBoard();
         Invoke("RPC_StartGame", 5f);

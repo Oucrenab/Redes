@@ -84,6 +84,15 @@ public class Player : NetworkBehaviour
 
         _netTransform.transform.position += (transform.forward * dir.x) + (transform.right * dir.z);
         //transform.position += (transform.forward * dir.x) + (transform.right * dir.z);
+
+        UpdateAnim(dir);
+    }
+    [SerializeField] Animator _myAnim;
+    void UpdateAnim(Vector3 moveDir)
+    {
+        if (!_myAnim) return;
+        _myAnim.SetFloat("xMove", moveDir.x);
+        _myAnim.SetFloat("zMove", moveDir.y);
     }
 
     Vector3 WallCheck(Vector3 dir)
