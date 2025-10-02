@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class Player : NetworkBehaviour
+public class Player : NetworkBehaviour, IPlayerLeft
 {
     [SerializeField] NetworkTransform _netTransform;
     [SerializeField] float _speed;
@@ -20,7 +20,8 @@ public class Player : NetworkBehaviour
 
     [SerializeField] Color _redColor;
     [SerializeField] Color _blueColor;
-    [SerializeField] MeshRenderer _renderer;
+    //[SerializeField] MeshRenderer _renderer;
+    [SerializeField] SkinnedMeshRenderer _renderer;
 
     Vector3 _dirInputs;
     Vector2 _mouseInput;
@@ -85,14 +86,15 @@ public class Player : NetworkBehaviour
         _netTransform.transform.position += (transform.forward * dir.x) + (transform.right * dir.z);
         //transform.position += (transform.forward * dir.x) + (transform.right * dir.z);
 
-        UpdateAnim(dir);
+        //Debug.Log(dir.normalized);
+        UpdateAnim(dir.normalized);
     }
     [SerializeField] Animator _myAnim;
     void UpdateAnim(Vector3 moveDir)
     {
         if (!_myAnim) return;
         _myAnim.SetFloat("xMove", moveDir.x);
-        _myAnim.SetFloat("zMove", moveDir.y);
+        _myAnim.SetFloat("zMove", moveDir.z);
     }
 
     Vector3 WallCheck(Vector3 dir)
@@ -141,5 +143,14 @@ public class Player : NetworkBehaviour
                 break;
         }
         //return this;
+    }
+
+    public void PlayerLeft(PlayerRef player)
+    {
+        Debug.Log("PInga");
+        if (Runner.SessionInfo.PlayerCount >= 2) return;
+        
+        RPC_SetTeam(Team.Red);
+        transform.position = new Vector3(0, 0, -5);
     }
 }

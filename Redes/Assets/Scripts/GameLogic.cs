@@ -3,14 +3,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GameLogic : NetworkBehaviour, IPlayerJoined
+public class GameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
 {
     //m filas n columnas
     //matriz 6 x 7
     //cosa para le spawn
     [Networked] public bool _redTaken { get; set; }
 
-    GameNode[,] _gameBoar = new GameNode[6,7];
+    GameNode[,] _gameBoar = new GameNode[6, 7];
     [SerializeField] NetworkPrefabRef _nodePrefab;
     [SerializeField] Player _playerturn;
     [Networked] public bool GameStarted { get; set; } = false;
@@ -18,7 +18,7 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined
     [SerializeField] Light _globalLight;
     [SerializeField] WinCanvas _winCanvas;
 
-    Team _turn = Team.Red;
+    [Networked] Team _turn { get; set; } = Team.Red;
     //public static GameLogic Instance { get; private set; }
 
     //public override void FixedUpdateNetwork()
@@ -73,9 +73,10 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined
     //        DropChip(6, Team.Blue);
     //}
 
-    [Rpc]
+    [Rpc(sources: RpcSources.All, targets: RpcTargets.StateAuthority)]
     public void RPC_PreviewChip(int column, Team team)
     {
+
         //Debug.Log("PreviewChip");
         for (int i = 0; i < 7; i++)
         {
@@ -91,28 +92,35 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined
     }
 
     //void StartGame(params object[] noUse) => RPC_StartGame();
-    [Rpc]
+    [Rpc(sources: RpcSources.All, targets: RpcTargets.StateAuthority)]
     void RPC_StartGame()
     {
+        if(_error) return;
         //EventManager.Unsubscribe("StartGame", StartGame);
         //EventManager.Subscribe("OnColumnInteract", Dropear);
         //EventManager.Subscribe("OnColumnPoint", Pintar);
-
-        for (int i = 0; i < 6; i++)
+        _winCanvas.RPC_TurnOff();
+        if (_gameBoar[0, 0] == null)
         {
-            for (int j = 0; j < 7; j++)
+            for (int i = 0; i < 6; i++)
             {
-                var pos = new Vector3(j, i + 0.5f) * 1.25f;
-                //_gameBoar[i, j] = Instantiate(_nodePrefab, pos, Quaternion.identity).SetTeam(Team.Empty);
-                _gameBoar[i, j] = Runner.Spawn(_nodePrefab, Vector3.zero, Quaternion.identity)
-                    .GetComponent<GameNode>();
-                _gameBoar[i, j].transform.position = pos;
-                _gameBoar[i, j].RPC_SetTeam(Team.Empty);
+                for (int j = 0; j < 7; j++)
+                {
+                    var pos = new Vector3(j, i + 0.5f) * 1.25f;
+                    //_gameBoar[i, j] = Instantiate(_nodePrefab, pos, Quaternion.identity).SetTeam(Team.Empty);
+                    _gameBoar[i, j] = Runner.Spawn(_nodePrefab, Vector3.zero, Quaternion.identity)
+                        .GetComponent<GameNode>();
+                    _gameBoar[i, j].transform.position = pos;
+                    _gameBoar[i, j].RPC_SetTeam(Team.Empty);
+                }
             }
         }
+        else
+        {
+            RPC_ClearGameBoard();
+        }
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        RPC_LockMouse();
 
         GameStarted = true;
         Debug.Log($"GameStarted {GameStarted}");
@@ -120,80 +128,104 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined
         switch (_turn)
         {
             case Team.Red:
-                _globalLight.color = Color.red;
+                RPC_ChangeLights(Color.red);
                 break;
             case Team.Blue:
-                _globalLight.color = Color.blue;
+                RPC_ChangeLights(Color.blue);
                 break;
             case Team.Empty:
-                _globalLight.color = Color.white;
+                RPC_ChangeLights(Color.white);
+                break;
+            default:
                 break;
         }
 
     }
 
-    [Rpc]
+    [Rpc(sources: RpcSources.StateAuthority, RpcTargets.All)]
+    void RPC_LockMouse()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    [Rpc(sources: RpcSources.All, targets: RpcTargets.StateAuthority)]
     void RPC_ClearGameBoard()
     {
-        for(int i = 0;i < _gameBoar.GetLength(0); i++)
+        for (int i = 0; i < _gameBoar.GetLength(0); i++)
         {
             for (int j = 0; j < _gameBoar.GetLength(1); j++)
             {
                 _gameBoar[i, j].RPC_SetTeam(Team.Empty);
             }
         }
+        //for (int i = 0; i < 6; i++)
+        //{
+        //    for (int j = 0; j < 7; j++)
+        //    {
+        //        Runner.Despawn(_gameBoar[i, j].Object);
+        //    }
+        //}
     }
 
-    [Rpc]
+    [Rpc(sources: RpcSources.All, targets: RpcTargets.StateAuthority)]
     public void RPC_DropChip(int column, Team team)
     {
         //Debug.Log("DropChip");
-        if (_gameBoar[5,column].Team != Team.Empty)
+        if (_gameBoar[5, column].Team != Team.Empty)
         {
             //DropChip(Random.Range(0, 7), team);
             return;
         }
 
 
-        for(int i = 0;i < 6; i++)
+        for (int i = 0; i < 6; i++)
         {
             if (_gameBoar[i, column].Team == Team.Empty)
             {
                 _gameBoar[i, column].RPC_SetTeam(team);
 
                 if (CheckForLine(column, i, team))
-                    GameOver(team);
+                    RPC_GameOver(team);
                 break;
             }
         }
 
-        SwitchTeam(team);
+        _audioSource.PlayOneShot(_chipDrop);
+        RPC_SwitchTeam(team);
     }
 
-
-    void SwitchTeam(Team team)
+    [Rpc(sources: RpcSources.StateAuthority, RpcTargets.All)]
+    void RPC_SwitchTeam(Team team)
     {
         switch (team)
         {
             case Team.Red:
                 _turn = Team.Blue;
-                _globalLight.color = Color.blue;
+                RPC_ChangeLights(Color.blue);
                 break;
             case Team.Blue:
                 _turn = Team.Red;
-                _globalLight.color = Color.red;
+                RPC_ChangeLights(Color.red);
                 break;
             case Team.Empty:
-                _globalLight.color = Color.white;
+                RPC_ChangeLights(Color.white);
                 break;
             default:
                 break;
         }
     }
 
-    [SerializeField] ParticleSystem _redWins, _blueWins;
+    [Rpc(sources: RpcSources.StateAuthority, RpcTargets.All)]
+    void RPC_ChangeLights(Color color) => _globalLight.color = color;
 
-    void GameOver(Team team)
+
+    [SerializeField] ParticleSystem _redWinsP, _blueWinsP;
+    [SerializeField] AudioSource _audioSource;
+    [SerializeField] AudioClip _redWinsAs, _blueWinsAs, _chipDrop;
+
+    [Rpc(sources: RpcSources.All, targets: RpcTargets.StateAuthority)]
+    void RPC_GameOver(Team team)
     {
         _globalLight.color = Color.white;
 
@@ -201,13 +233,24 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined
 
         _winCanvas.RPC_WinImage(team);
 
-        if (team == Team.Red)
-            _redWins.Play();
-        else
-            _blueWins.Play();
+        switch (team)
+        {
+            case Team.Red:
+                _audioSource.PlayOneShot(_redWinsAs);
+                _redWinsP.Play();
+                Invoke("RPC_StartGame", 5f);
+                break;
+            case Team.Blue:
+                _audioSource.PlayOneShot(_blueWinsAs);
+                _blueWinsP.Play();
+                Invoke("RPC_StartGame", 5f);
+                break;
+            case Team.Empty:
+                break;
+        }
 
         RPC_ClearGameBoard();
-        Invoke("RPC_StartGame", 5f);
+        //Invoke("RPC_StartGame", 5f);
 
         GameStarted = false;
     }
@@ -225,9 +268,14 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined
     {
         if (line < 3) return false;
 
-        for (int i = line; i > 0; i--)
+        for (int i = line; i > line - 4 || i > 0; i--)
         {
-            if (_gameBoar[i, column].Team != team) return false;
+            if (_gameBoar[i, column].Team != team)
+            {
+                return false;
+                break;
+            }
+
         }
 
         return true;
@@ -363,6 +411,7 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined
 
     public void Dropear(int i, Team t)
     {
+
         if (!GameStarted) return;
 
         var column = i;
@@ -390,6 +439,38 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined
     {
         if (Runner.SessionInfo.PlayerCount >= 2 && !GameStarted)
             RPC_StartGame();
+    }
+
+    [SerializeField] Canvas _errorCanvas;
+    bool _error = false;
+    public void PlayerLeft(PlayerRef player)
+    {
+        Debug.Log("Coño");
+        if (Runner.SessionInfo.PlayerCount >= 2) return;
+
+        //RPC_GameOver(Team.Empty);
+        //GameStarted = false;
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        _errorCanvas.enabled = true;
+        GameStarted = false;
+        _error = true;
+        
+    }
+
+    public void QuitGame()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#elif UNITY_WEBGL
+            Application.ExternalEval("window.close();");
+#elif UNITY_STANDALONE
+            Application.Quit();
+#else
+            Application.Quit();
+#endif
     }
 
     //public void PlayerLeft(PlayerRef player)
