@@ -35,7 +35,7 @@ namespace Fusion {
   [RequireComponent(typeof(CharacterController))]
   [NetworkBehaviourWeaved(NetworkCCData.WORDS)]
   // ReSharper disable once CheckNamespace
-  public sealed unsafe class NetworkCharacterController : NetworkTRSP, INetworkTRSPTeleport, IBeforeAllTicks, IAfterAllTicks, IBeforeCopyPreviousState {
+  public unsafe class NetworkCharacterController : NetworkTRSP, INetworkTRSPTeleport, IBeforeAllTicks, IAfterAllTicks, IBeforeCopyPreviousState {
     new ref NetworkCCData Data => ref ReinterpretState<NetworkCCData>();
 
     [Header("Character Controller Settings")]

@@ -33,6 +33,7 @@ public class CamFollow : MonoBehaviour
     public CamFollow SetCamHolder(Transform newHolder)
     {
         _camHolder = newHolder;
+        transform.rotation =_camHolder.rotation;
         _cam.Follow = _camHolder;
         return this;
     }
