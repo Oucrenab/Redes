@@ -2,6 +2,7 @@ using Fusion;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
 {
@@ -185,8 +186,14 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
             {
                 _gameBoar[i, column].RPC_SetTeam(team);
 
-                if (CheckForLine(column, i, team))
-                    RPC_GameOver(team);
+                if (FullBoard())
+                {
+                    RPC_GameOver(Team.Empty);
+                    break;
+                }
+
+                //if (CheckForLine(column, i, team))
+                //    RPC_GameOver(team);
                 break;
             }
         }
@@ -222,7 +229,7 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
 
     [SerializeField] ParticleSystem _redWinsP, _blueWinsP;
     [SerializeField] AudioSource _audioSource;
-    [SerializeField] AudioClip _redWinsAs, _blueWinsAs, _chipDrop;
+    [SerializeField] AudioClip _redWinsAs, _blueWinsAs,_drawAs, _chipDrop;
 
     [Rpc(sources: RpcSources.All, targets: RpcTargets.StateAuthority)]
     void RPC_GameOver(Team team)
@@ -246,6 +253,9 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
                 Invoke("RPC_StartGame", 5f);
                 break;
             case Team.Empty:
+                _audioSource.PlayOneShot(_drawAs);
+                Invoke("RPC_StartGame", 5f);
+
                 break;
         }
 
@@ -262,6 +272,18 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
         if (HorizontalCheck(column, line, team)) return true;
         if (DiagonalCheck(column, line, team)) return true;
         return false;
+    }
+
+    bool FullBoard()
+    {
+        int n = 0;
+        for (int i = 0; i < 7; i++)
+        {
+            if (_gameBoar[5, i].Team != Team.Empty) n++;
+        }
+
+
+        return n >= 7;
     }
 
     bool VerticalCheck(int column, int line, Team team)
@@ -445,8 +467,9 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
     bool _error = false;
     public void PlayerLeft(PlayerRef player)
     {
+        //RPC_PlayerLeft(player);
         Debug.Log("Coño");
-        if (Runner.SessionInfo.PlayerCount >= 2) return;
+        if (Runner.SessionInfo.PlayerCount > 2) return;
 
         //RPC_GameOver(Team.Empty);
         //GameStarted = false;
@@ -457,11 +480,45 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
         _errorCanvas.enabled = true;
         GameStarted = false;
         _error = true;
-        
     }
+
+    [Rpc(sources: RpcSources.StateAuthority, targets: RpcTargets.All)]
+    public void RPC_ErrorCanvas()
+    {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        _errorCanvas.enabled = true;
+        GameStarted = false;
+        _error = true;
+    }
+
+    private void OnApplicationQuit()
+    {
+        RPC_ErrorCanvas();
+    }
+
+    //[Rpc(sources: RpcSources.StateAuthority, targets: RpcTargets.All)]
+    //public void RPC_PlayerLeft(PlayerRef player)
+    //{
+    //    Debug.Log("Coño");
+    //    if (Runner.SessionInfo.PlayerCount > 2) return;
+
+    //    //RPC_GameOver(Team.Empty);
+    //    //GameStarted = false;
+
+    //    Cursor.lockState = CursorLockMode.None;
+    //    Cursor.visible = true;
+
+    //    _errorCanvas.enabled = true;
+    //    GameStarted = false;
+    //    _error = true;
+    //}
 
     public void QuitGame()
     {
+        RPC_ErrorCanvas();
+
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #elif UNITY_WEBGL

@@ -95,6 +95,7 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
     [Rpc(sources: RpcSources.All, targets: RpcTargets.StateAuthority)]
     void RPC_StartGame()
     {
+     //   RPC_StartPlayerCheck();
         if(_error) return;
         //EventManager.Unsubscribe("StartGame", StartGame);
         //EventManager.Subscribe("OnColumnInteract", Dropear);
@@ -139,8 +140,14 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
             default:
                 break;
         }
-
     }
+
+    //[Rpc(RpcSources.StateAuthority, targets: RpcTargets.All)]
+    //void RPC_StartPlayerCheck()
+    //{
+    //    FindObjectOfType<PlayerLeftCheck>().StartCheck();
+    //}
+
 
     [Rpc(sources: RpcSources.StateAuthority, RpcTargets.All)]
     void RPC_LockMouse()
