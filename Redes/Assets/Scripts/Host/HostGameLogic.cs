@@ -186,15 +186,17 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
             {
                 _gameBoar[i, column].RPC_SetTeam(team);
 
+                if (CheckForLine(column, i, team))
+                {
+                    RPC_GameOver(team);
+                    break;
+                }
+
                 if (FullBoard())
                 {
                     RPC_GameOver(Team.Empty);
                     break;
                 }
-
-                if (CheckForLine(column, i, team))
-                    RPC_GameOver(team);
-                break;
             }
         }
 
