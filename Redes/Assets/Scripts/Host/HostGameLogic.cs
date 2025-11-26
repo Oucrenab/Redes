@@ -192,8 +192,8 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
                     break;
                 }
 
-                //if (CheckForLine(column, i, team))
-                //    RPC_GameOver(team);
+                if (CheckForLine(column, i, team))
+                    RPC_GameOver(team);
                 break;
             }
         }
