@@ -189,7 +189,7 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
                 if (CheckForLine(column, i, team))
                 {
                     RPC_GameOver(team);
-                    break;
+                    continue;
                 }
 
                 if (FullBoard())
@@ -197,6 +197,7 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
                     RPC_GameOver(Team.Empty);
                     break;
                 }
+                break;
             }
         }
 
