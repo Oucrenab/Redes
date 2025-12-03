@@ -6,6 +6,9 @@ using UnityEngine;
 
 public class Player : NetworkBehaviour, IPlayerLeft
 {
+    public Color playerColor;
+
+
     [SerializeField] NetworkTransform _netTransform;
     [SerializeField] float _speed;
     [SerializeField] Transform _camHolder;
@@ -129,19 +132,19 @@ public class Player : NetworkBehaviour, IPlayerLeft
     public void RPC_SetTeam(Team team)
     {
         _team = team;
-        switch (_team)
-        {
-            case Team.Red:
-                _renderer.material.color = _redColor;
-                break;
-            case Team.Blue:
-                _renderer.material.color = _blueColor;
-                break;
-            case Team.Empty:
-                break;
-            default:
-                break;
-        }
+        //switch (_team)
+        //{
+        //    case Team.Red:
+        //        _renderer.material.color = _redColor;
+        //        break;
+        //    case Team.Blue:
+        //        _renderer.material.color = _blueColor;
+        //        break;
+        //    case Team.Empty:
+        //        break;
+        //    default:
+        //        break;
+        //}
         //return this;
     }
 

@@ -14,7 +14,7 @@ public class HostColumnTrigger : NetworkBehaviour, IPointable
         //EventManager.Trigger("OnColumnInteract", _column - 1, team, player);
         //if (GameLogic.Instance.GameStarted)
         //    GameLogic.Instance.Dropear(_column, team);
-        _gameLogic.Dropear(_column - 1, team);
+        _gameLogic.Dropear(_column - 1, team, player.playerColor);
         //Debug.Log($"{name} Interact {_column} {player.name} {team}");
     }
 
@@ -22,17 +22,17 @@ public class HostColumnTrigger : NetworkBehaviour, IPointable
     public void RPC_Pointed(Team team, Player player)
     {
         //EventManager.Trigger("OnColumnPoint", _column - 1, team, player);
-        _gameLogic.Pintar(_column - 1, team);
+        _gameLogic.Pintar(_column - 1, team, player.playerColor);
         //Debug.Log($"{name} Pointed {_column} {player.name} {team}");
     }
 
     public void RPC_Pointed_Host(Team team, HostPlayerController player)
     {
-        _gameLogic.Pintar(_column - 1, team);
+        _gameLogic.Pintar(_column - 1, team, player.playerColor);
     }
 
     public void RPC_Interact_Host(Team team, HostPlayerController player)
     {//a
-        _gameLogic.Dropear(_column - 1, team);
+        _gameLogic.Dropear(_column - 1, team, player.playerColor);
     }
 }

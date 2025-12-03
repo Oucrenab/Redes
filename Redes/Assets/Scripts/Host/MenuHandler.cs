@@ -41,6 +41,12 @@ public class MenuHandler : MonoBehaviour
         };
     }
 
+    private void Start()
+    {
+        QualitySettings.vSyncCount = 1;
+        Application.targetFrameRate = 60;
+    }
+
     void AskToJoinLobby()
     {
         _joinButton.interactable = false;

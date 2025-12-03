@@ -8,28 +8,30 @@ public class GameNode : NetworkBehaviour, IPlayerLeft
     [SerializeField] Team _team;
     [SerializeField] MeshRenderer _renderer;
 
+    [SerializeField] AudioSource _as;
+    [SerializeField] AudioClip _paint, _drop;
+    [SerializeField] ParticleSystem _dropParticle;
+
     public Team Team { get { return _team; } }
 
     [Rpc]
-    public void RPC_SetTeam(Team newT)
+    public void RPC_SetTeam(Team newT, Color color)
     {
         _team = newT;
-        var color = Color.white;
-
-        switch (_team)
+        //var color = Color.white;
+        if(_team == Team.Empty)
         {
-            case Team.Red:
-                color = Color.red;
-                break;
-            case Team.Blue:
-                color = Color.blue;
-                break;
-            case Team.Empty:
-                color.a = 0;
-                break;
+            RPC_SetColor(Team.Empty);
+            return;
         }
-        _renderer.material.color = color;
 
+        Debug.Log($"Esto no deberisa salir si empty {newT}");
+
+        RPC_SetColor(color, false);
+
+        _as.PlayOneShot(_drop);
+        _dropParticle.startColor = color;
+        _dropParticle.Play();
         //print("b " + color);
 
         //return this;
@@ -54,6 +56,14 @@ public class GameNode : NetworkBehaviour, IPlayerLeft
         _renderer.material.color = color;
 
         //return this;
+    }
+    [Rpc]
+    public void RPC_SetColor(Color color, bool playSound = true)
+    {
+        _renderer.material.color = color;
+
+        if (playSound)
+            _as.PlayOneShot(_paint);
     }
 
     public void PlayerLeft(PlayerRef player)

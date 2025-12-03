@@ -1,24 +1,25 @@
-using Fusion;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
-public class GoToMenu : MonoBehaviour
+public class HostMainMenu : MonoBehaviour
 {
-    [SerializeField] HostGameLogic _gl;
-    NetworkRunner runner;
+    [SerializeField] Canvas _menu;
+    [SerializeField] Canvas _credits;
 
-
-    //s
-    public void ToMenu()
+    public void PlayButton()
     {
+        SceneManager.LoadScene("HostMenu");
+    }
 
-        if (_gl)
-            _gl.Runner.Shutdown();
+    public void CreditButton()
+    {
+        _credits.enabled = true;
+    }
 
-
-        SceneManager.LoadScene("Menu");
+    public void BackToMenu()
+    {
+        _credits.enabled = false;
     }
 
     public void QuitGame()

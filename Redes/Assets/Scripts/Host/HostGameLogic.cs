@@ -1,4 +1,5 @@
 using Fusion;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -75,7 +76,7 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
     //}
 
     [Rpc(sources: RpcSources.All, targets: RpcTargets.StateAuthority)]
-    public void RPC_PreviewChip(int column, Team team)
+    public void RPC_PreviewChip(int column, Team team, Color color)
     {
 
         //Debug.Log("PreviewChip");
@@ -87,7 +88,7 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
             _gameBoar[5, i].RPC_SetColor(Team.Empty);
 
         }
-        _gameBoar[5, column].RPC_SetColor(team);
+        _gameBoar[5, column].RPC_SetColor(color, false);
 
 
     }
@@ -97,10 +98,11 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
     void RPC_StartGame()
     {
         if(_error) return;
+        _winCanvas.RPC_TurnOff();
         //EventManager.Unsubscribe("StartGame", StartGame);
         //EventManager.Subscribe("OnColumnInteract", Dropear);
         //EventManager.Subscribe("OnColumnPoint", Pintar);
-        _winCanvas.RPC_TurnOff();
+        if (!(_playersReady[0] && _playersReady[1])) return;
         if (_gameBoar[0, 0] == null)
         {
             for (int i = 0; i < 6; i++)
@@ -112,7 +114,7 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
                     _gameBoar[i, j] = Runner.Spawn(_nodePrefab, Vector3.zero, Quaternion.identity)
                         .GetComponent<GameNode>();
                     _gameBoar[i, j].transform.position = pos;
-                    _gameBoar[i, j].RPC_SetTeam(Team.Empty);
+                    _gameBoar[i, j].RPC_SetTeam(Team.Empty, Color.white);
                 }
             }
         }
@@ -129,10 +131,10 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
         switch (_turn)
         {
             case Team.Red:
-                RPC_ChangeLights(Color.red);
+                RPC_ChangeLights(_playersRefs[0].playerColor);
                 break;
             case Team.Blue:
-                RPC_ChangeLights(Color.blue);
+                RPC_ChangeLights(_playersRefs[1].playerColor);
                 break;
             case Team.Empty:
                 RPC_ChangeLights(Color.white);
@@ -146,8 +148,8 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
     [Rpc(sources: RpcSources.StateAuthority, RpcTargets.All)]
     void RPC_LockMouse()
     {
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        //Cursor.lockState = CursorLockMode.Locked;
+        //Cursor.visible = false;
     }
 
     [Rpc(sources: RpcSources.All, targets: RpcTargets.StateAuthority)]
@@ -157,7 +159,7 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
         {
             for (int j = 0; j < _gameBoar.GetLength(1); j++)
             {
-                _gameBoar[i, j].RPC_SetTeam(Team.Empty);
+                _gameBoar[i, j].RPC_SetTeam(Team.Empty, Color.white);
             }
         }
         //for (int i = 0; i < 6; i++)
@@ -170,7 +172,7 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
     }
 
     [Rpc(sources: RpcSources.All, targets: RpcTargets.StateAuthority)]
-    public void RPC_DropChip(int column, Team team)
+    public void RPC_DropChip(int column, Team team, Color color)
     {
         //Debug.Log("DropChip");
         if (_gameBoar[5, column].Team != Team.Empty)
@@ -184,7 +186,7 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
         {
             if (_gameBoar[i, column].Team == Team.Empty)
             {
-                _gameBoar[i, column].RPC_SetTeam(team);
+                _gameBoar[i, column].RPC_SetTeam(team, color);
 
                 if (CheckForLine(column, i, team))
                 {
@@ -212,11 +214,11 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
         {
             case Team.Red:
                 _turn = Team.Blue;
-                RPC_ChangeLights(Color.blue);
+                RPC_ChangeLights(_playersRefs[1].playerColor);
                 break;
             case Team.Blue:
                 _turn = Team.Red;
-                RPC_ChangeLights(Color.red);
+                RPC_ChangeLights(_playersRefs[0].playerColor);
                 break;
             case Team.Empty:
                 RPC_ChangeLights(Color.white);
@@ -240,6 +242,9 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
         _globalLight.color = Color.white;
 
         Debug.Log($"<color=green>Linea {team} formada</color>");
+
+        _winCanvas.RPC_ChangeCanvasColor(_playersRefs[0]._team, _playersRefs[0].playerColor);
+        _winCanvas.RPC_ChangeCanvasColor(_playersRefs[1]._team, _playersRefs[1].playerColor);
 
         _winCanvas.RPC_WinImage(team);
 
@@ -434,7 +439,7 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
 
     //public void Dropear(params object[] _vars) => RPC_Dropear((int)_vars[0], (Team)_vars[1]);
 
-    public void Dropear(int i, Team t)
+    public void Dropear(int i, Team t, Color color)
     {
 
         if (!GameStarted) return;
@@ -443,27 +448,49 @@ public class HostGameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
         var team = t;
         if (team != _turn) return;
         //Debug.Log("Dropear");
-        RPC_DropChip(column, team);
+        RPC_DropChip(column, team, color);
     }
 
     //public void Pintar(params object[] _vars) => RPC_Pintar((int)_vars[0], (Team)_vars[1]);
 
-    public void Pintar(int i , Team t)
+    public void Pintar(int i , Team t, Color color)
     {
         if (!GameStarted) return;
-        var column = i;
         var team = t;
         if (team != _turn) return;
+        var column = i;
 
         //Debug.Log("Pintar");
 
-        RPC_PreviewChip(column, team);
+        RPC_PreviewChip(column, team, color);
     }
 
     public void PlayerJoined(PlayerRef player)
     {
         if (Runner.SessionInfo.PlayerCount >= 2 && !GameStarted)
             RPC_StartGame();
+    }
+
+    [SerializeField] bool[] _playersReady = new bool[2];
+    [SerializeField] HostPlayerController[] _playersRefs = new HostPlayerController[2]; 
+
+    public void PlayerReady(int index, HostPlayerController p)
+    {
+        _playersReady[index] = true;
+        _playersRefs[index] = p;
+        p.canChangeColor = false;
+
+        bool startgame = _playersReady[0] && _playersReady[1];
+
+        if(startgame) 
+            RPC_StartGame();
+    }
+
+    public void PlayerReadyCancel(int index)
+    {
+        _playersReady[index] = false;
+        _playersRefs[index].canChangeColor = true;
+        //_playersRefs[index] = null;
     }
 
     [SerializeField] Canvas _errorCanvas;

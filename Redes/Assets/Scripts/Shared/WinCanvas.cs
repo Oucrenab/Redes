@@ -2,6 +2,7 @@ using Fusion;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class WinCanvas : NetworkBehaviour
 {
@@ -28,6 +29,22 @@ public class WinCanvas : NetworkBehaviour
                 _blueWins.SetActive(false);
                 _redWins.SetActive(false);
                 _draw.SetActive(true);
+                break;
+        }
+    }
+
+    [Rpc]
+    public void RPC_ChangeCanvasColor(Team team, Color color)
+    {
+        switch (team)
+        {
+            case Team.Red:
+                _redWins.GetComponent<RawImage>().color = color;
+                break;
+            case Team.Blue:
+                _redWins.GetComponent<RawImage>().color = color;
+                break;
+            case Team.Empty:
                 break;
         }
     }

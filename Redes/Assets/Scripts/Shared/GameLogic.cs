@@ -112,7 +112,7 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
                     _gameBoar[i, j] = Runner.Spawn(_nodePrefab, Vector3.zero, Quaternion.identity)
                         .GetComponent<GameNode>();
                     _gameBoar[i, j].transform.position = pos;
-                    _gameBoar[i, j].RPC_SetTeam(Team.Empty);
+                    _gameBoar[i, j].RPC_SetTeam(Team.Empty, Color.white);
                 }
             }
         }
@@ -152,8 +152,8 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
     [Rpc(sources: RpcSources.StateAuthority, RpcTargets.All)]
     void RPC_LockMouse()
     {
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        //Cursor.lockState = CursorLockMode.Locked;
+        //Cursor.visible = false;
     }
 
     [Rpc(sources: RpcSources.All, targets: RpcTargets.StateAuthority)]
@@ -163,7 +163,7 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
         {
             for (int j = 0; j < _gameBoar.GetLength(1); j++)
             {
-                _gameBoar[i, j].RPC_SetTeam(Team.Empty);
+                _gameBoar[i, j].RPC_SetTeam(Team.Empty, Color.white);
             }
         }
         //for (int i = 0; i < 6; i++)
@@ -190,7 +190,7 @@ public class GameLogic : NetworkBehaviour, IPlayerJoined, IPlayerLeft
         {
             if (_gameBoar[i, column].Team == Team.Empty)
             {
-                _gameBoar[i, column].RPC_SetTeam(team);
+                _gameBoar[i, column].RPC_SetTeam(team, Color.white);
 
                 if (CheckForLine(column, i, team))
                     RPC_GameOver(team);

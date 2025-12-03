@@ -80,6 +80,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 256
   _cam: {fileID: 0}
+  _renderer: {fileID: 1972894664559674094}
   __team: 0
   _myAnim: {fileID: 1112610791830976852}
 --- !u!114 &-3694557868305285665
@@ -259,6 +260,11 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 8114984719693354758}
   m_SourcePrefab: {fileID: 100100000, guid: d975bd453459de74588c0e31e2c8d0e8, type: 3}
+--- !u!137 &1972894664559674094 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -5561278830320907758, guid: d975bd453459de74588c0e31e2c8d0e8, type: 3}
+  m_PrefabInstance: {fileID: 3004885430866102524}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2698244076708853165 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: d975bd453459de74588c0e31e2c8d0e8, type: 3}

@@ -3,7 +3,6 @@ using Fusion.Sockets;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class HostPlayerSpawner : NetworkBehaviour, INetworkRunnerCallbacks
@@ -19,7 +18,22 @@ public class HostPlayerSpawner : NetworkBehaviour, INetworkRunnerCallbacks
         Runner.AddCallbacks(this);
     }
 
-    
+    [SerializeField] ColorPicker _colorPicker;
+    [Rpc(sources: RpcSources.All, RpcTargets.Proxies)]
+    public void RPC_SetPlayerColorMenu(HostPlayerController player)
+    {
+        Debug.Log("Coso Client");
+        player.SetColorPicker(_colorPicker);
+    }
+
+    [Rpc(sources: RpcSources.All, RpcTargets.StateAuthority)]
+    public void RPC_SetPlayerColorMenu(HostPlayerController player, string nouse)
+    {
+        Debug.Log("Coso Host");
+        player.SetColorPicker(_colorPicker);
+    }
+
+
 
     #region Callbacks
     public void OnPlayerJoined(NetworkRunner runner, PlayerRef player) 
@@ -33,10 +47,19 @@ public class HostPlayerSpawner : NetworkBehaviour, INetworkRunnerCallbacks
                 player).GetComponent<HostPlayerController>();
 
             if(runner.SessionInfo.PlayerCount < 2)
+            {
                 p._team = Team.Red;
+                RPC_SetPlayerColorMenu(p, "host");
+                p.RPC_SetColor(Color.red);
+            }
             else
+            {
                 p._team = Team.Blue;
+                RPC_SetPlayerColorMenu(p);
+                p.RPC_SetColor(Color.blue);
+            }
 
+            //Debug.Log("Pinga");
         }
     }
     public void OnPlayerLeft(NetworkRunner runner, PlayerRef player) 

@@ -13,6 +13,8 @@ public class HostPlayerController : NetworkBehaviour
     [SerializeField] LayerMask _wall;
 
     [SerializeField] CamFollow _cam;
+    [SerializeField] SkinnedMeshRenderer _renderer;
+
 
     [Networked] public Team _team { get; set; } = Team.Red;
 
@@ -119,5 +121,22 @@ public class HostPlayerController : NetworkBehaviour
         _cam = cam;
         _cam.SetCamHolder(_camHolder.transform);
         return this;
+    }
+
+    public void SetColorPicker(ColorPicker picker)
+    {
+        Debug.Log("Picker Seteado");
+        picker.OnColorSelect.AddListener(RPC_SetColor);
+    }
+
+
+    public Color playerColor;
+    [Networked] public NetworkBool canChangeColor { get; set; } = true;
+    [Rpc]
+    public void RPC_SetColor(Color color)
+    {
+        if (!canChangeColor) return;
+        _renderer.material.color = color;
+        playerColor = color;
     }
 }
